@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI/CD Pipeline
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in paralle
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test
+
+      - name: Deploy to Staging
+        run: ./deploy-script.sh
+        # Replace with your actual deployment script/command
+
+      - name: Send Notification on Failure
+        if: ${{ failure() }}
+        run: |
+          echo "Build or deployment failed. Notify the team."
+
+      - name: Create Issue
+        if: ${{ failure() }}
+        uses: actions/github-script@v4
+        with:
+          script: |
+            github.issues.create({
+              repo: context.repo.repo,
+              owner: context.repo.owner,
+              title: 'CI/CD Failure Notification',
+              body: 'The CI/CD pipeline has failed. Please investigate and take appropriate action.'
+            })
